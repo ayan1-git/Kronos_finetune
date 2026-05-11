@@ -1,0 +1,28 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Data
+data/
+Data /
+*.csv
+*.pkl
+
+# Models & Outputs
+outputs/
+*.pth
+*.pt
+best_model/
+
+# IDEs
+.vscode/
+.idea/
+
+# Environment
+.env
+venv/
+env/
+
+# Kaggle Notebook (Private)
+kaggle.ipynb
