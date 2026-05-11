@@ -51,8 +51,8 @@ class Config:
 
         # Number of samples to draw for one "epoch" of training/validation.
         # This is useful for large datasets where a true epoch is too long.
-        self.n_train_iter = 2000 * self.batch_size
-        self.n_val_iter = 400 * self.batch_size
+        self.n_train_iter = 800 * self.batch_size
+        self.n_val_iter = 200 * self.batch_size
 
         # Learning rates for different model components.
         self.tokenizer_learning_rate = 2e-4
@@ -72,7 +72,7 @@ class Config:
         # =================================================================
         # Experiment Logging & Saving
         # =================================================================
-        self.use_comet = True # Set to False if you don't want to use Comet ML
+        self.use_comet = False # Set to False if you don't want to use Comet ML
         self.comet_config = {
             # It is highly recommended to load secrets from environment variables
             # for security purposes. Example: os.getenv("COMET_API_KEY")
@@ -98,8 +98,8 @@ class Config:
         # =================================================================
         # TODO: Update these paths to your pretrained model locations.
         # These can be local paths or Hugging Face Hub model identifiers.
-        self.pretrained_tokenizer_path = "path/to/your/Kronos-Tokenizer-base"
-        self.pretrained_predictor_path = "path/to/your/Kronos-small"
+        self.pretrained_tokenizer_path = "NeoQuasar/Kronos-Tokenizer-base"
+        self.pretrained_predictor_path = "NeoQuasar/Kronos-base"
 
         # Paths to the fine-tuned models, derived from the save_path.
         # These will be generated automatically during training.

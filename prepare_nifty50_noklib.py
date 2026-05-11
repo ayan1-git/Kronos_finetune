@@ -14,7 +14,8 @@ def load_from_csvs(data_dir):
         sym = f.replace(".csv", "")
         df = pd.read_csv(f"{data_dir}/{f}")
         df["date"] = pd.to_datetime(df["date"])
-        df = df.set_index("date").sort_index()
+        df = df.rename(columns={"date": "datetime"})
+        df = df.set_index("datetime").sort_index()
         df = df[["open", "high", "low", "close"]].dropna()
         if len(df) >= LOOKBACK + PREDICT + 1:
             all_data[sym] = df
