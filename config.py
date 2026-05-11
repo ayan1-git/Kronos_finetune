@@ -14,8 +14,8 @@ class Config:
         self.instrument = 'nifty50'
 
         # Overall time range for data loading from Qlib.
-        self.dataset_begin_time = "2011-01-01"
-        self.dataset_end_time = '2025-06-05'
+        self.dataset_begin_time = "2015-01-09"
+        self.dataset_end_time = "2026-04-08"
 
         # Sliding window parameters for creating samples.
         self.lookback_window = 90  # Number of past time steps for input.
@@ -32,10 +32,10 @@ class Config:
         # =================================================================
         # Note: The validation/test set starts earlier than the training/validation set ends
         # to account for the `lookback_window`.
-        self.train_time_range = ["2011-01-01", "2022-12-31"]
-        self.val_time_range = ["2022-09-01", "2024-06-30"]
-        self.test_time_range = ["2024-04-01", "2025-06-05"]
-        self.backtest_time_range = ["2024-07-01", "2025-06-05"]
+        self.train_time_range = ["2015-01-09", "2024-06-30"]
+        self.val_time_range = ["2024-04-01", "2025-06-30"]
+        self.test_time_range = ["2025-04-01", "2026-04-08"]
+        self.backtest_time_range = ["2025-07-01", "2026-04-08"]
 
         # TODO: Directory to save the processed, pickled datasets.
         self.dataset_path = "./data/processed_datasets"

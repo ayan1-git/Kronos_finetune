@@ -13,20 +13,20 @@ def load_from_csvs(data_dir):
         if not f.endswith(".csv"): continue
         sym = f.replace(".csv", "")
         df = pd.read_csv(f"{data_dir}/{f}")
-        df["datetime"] = pd.to_datetime(df["datetime"])
-        df = df.set_index("datetime").sort_index()
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.set_index("date").sort_index()
         df = df[["open", "high", "low", "close"]].dropna()
         if len(df) >= LOOKBACK + PREDICT + 1:
             all_data[sym] = df
     return all_data
 
-all_data = load_from_csvs("./nifty50_csv")
+all_data = load_from_csvs("Data ")
 
 # --- Split by date (overlap for lookback buffer) ---
 splits = {
-    "train": (None,         "2023-09-30"),
-    "val":   ("2023-07-01", "2024-09-30"),  # 3-month overlap
-    "test":  ("2024-07-01", None),           # 3-month overlap
+    "train": (None,         "2024-06-30"),
+    "val":   ("2024-04-01", "2025-06-30"),  # overlap
+    "test":  ("2025-04-01", None),           # overlap
 }
 
 os.makedirs(OUTPUT_DIR, exist_ok=True)
