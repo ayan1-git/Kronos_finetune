@@ -51,11 +51,11 @@ def create_dataloaders(config: dict, rank: int, world_size: int):
 
     train_loader = DataLoader(
         train_dataset, batch_size=config['batch_size'], sampler=train_sampler,
-        num_workers=4, pin_memory=True, drop_last=True
+        num_workers=config.get('num_workers', 2), pin_memory=True, drop_last=True
     )
     val_loader = DataLoader(
         valid_dataset, batch_size=config['batch_size'], sampler=val_sampler,
-        num_workers=4, pin_memory=True, drop_last=False
+        num_workers=config.get('num_workers', 2), pin_memory=True, drop_last=False
     )
     return train_loader, val_loader, train_dataset, valid_dataset
 
@@ -86,7 +86,6 @@ def train_model(model, tokenizer, device, config, save_dir, logger, rank, world_
     best_val_loss = float('inf')
     dt_result = {}
     batch_idx_global = 0
-    scaler = torch.cuda.amp.GradScaler()
 
     for epoch_idx in range(config['epochs']):
         epoch_start_time = time.time()
@@ -109,17 +108,14 @@ def train_model(model, tokenizer, device, config, save_dir, logger, rank, world_
             token_out = [token_seq_0[:, 1:], token_seq_1[:, 1:]]
 
             # Forward pass and loss calculation
-            optimizer.zero_grad()
-            with torch.cuda.amp.autocast():
-                logits = model(token_in[0], token_in[1], batch_x_stamp[:, :-1, :])
-                loss, s1_loss, s2_loss = model.module.head.compute_loss(logits[0], logits[1], token_out[0], token_out[1])
+            logits = model(token_in[0], token_in[1], batch_x_stamp[:, :-1, :])
+            loss, s1_loss, s2_loss = model.module.head.compute_loss(logits[0], logits[1], token_out[0], token_out[1])
 
             # Backward pass and optimization
-            scaler.scale(loss).backward()
-            scaler.unscale_(optimizer)
+            optimizer.zero_grad()
+            loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=3.0)
-            scaler.step(optimizer)
-            scaler.update()
+            optimizer.step()
             scheduler.step()
 
             # Logging (Master Process Only)

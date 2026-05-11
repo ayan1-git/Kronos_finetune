@@ -47,7 +47,8 @@ class Config:
 
         self.epochs = 30
         self.log_interval = 100  # Log training status every N batches.
-        self.batch_size = 64  # Batch size per GPU.
+        self.batch_size = 50  # Batch size per GPU.
+        self.num_workers = 4  # Number of data loading workers.
 
         # Number of samples to draw for one "epoch" of training/validation.
         # This is useful for large datasets where a true epoch is too long.

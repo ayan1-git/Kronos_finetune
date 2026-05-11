@@ -104,14 +104,6 @@ class QlibDataset(Dataset):
         x = win_df[self.feature_list].values.astype(np.float32)
         x_stamp = win_df[self.time_feature_list].values.astype(np.float32)
 
-        # Ensure we have exactly 6 features (padding with zeros if necessary)
-        # to match the pretrained model's expectation.
-        if x.shape[1] < 6:
-            padding = np.zeros((x.shape[0], 6 - x.shape[1]), dtype=np.float32)
-            x = np.concatenate([x, padding], axis=1)
-        elif x.shape[1] > 6:
-            x = x[:, :6]
-
         # Normalize the window. Mean and std are calculated strictly on the
         # lookback window (past data) to prevent future data leakage.
         past_len = self.config.lookback_window
@@ -121,9 +113,16 @@ class QlibDataset(Dataset):
         x_std  = np.std(past_x, axis=0)
 
         # Apply normalization and robust clipping to the entire sequence
-        # Use a slightly larger epsilon for numerical stability
-        x = (x - x_mean) / (x_std + 1e-4)
+        x = (x - x_mean) / (x_std + 1e-5)
         x = np.clip(x, -self.config.clip, self.config.clip)
+
+        # Ensure we have exactly 6 features (padding with zeros if necessary)
+        # to match the pretrained model's expectation.
+        if x.shape[1] < 6:
+            padding = np.zeros((x.shape[0], 6 - x.shape[1]), dtype=np.float32)
+            x = np.concatenate([x, padding], axis=1)
+        elif x.shape[1] > 6:
+            x = x[:, :6]
 
         # Convert to PyTorch tensors.
         x_tensor = torch.from_numpy(x)
