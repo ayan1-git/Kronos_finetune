@@ -116,6 +116,14 @@ class QlibDataset(Dataset):
         x = (x - x_mean) / (x_std + 1e-5)
         x = np.clip(x, -self.config.clip, self.config.clip)
 
+        # Ensure we have exactly 6 features (padding with zeros if necessary)
+        # to match the pretrained model's expectation.
+        if x.shape[1] < 6:
+            padding = np.zeros((x.shape[0], 6 - x.shape[1]), dtype=np.float32)
+            x = np.concatenate([x, padding], axis=1)
+        elif x.shape[1] > 6:
+            x = x[:, :6]
+
         # Convert to PyTorch tensors.
         x_tensor = torch.from_numpy(x)
         x_stamp_tensor = torch.from_numpy(x_stamp)

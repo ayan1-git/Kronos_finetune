@@ -16,7 +16,9 @@ def load_from_csvs(data_dir):
         df["date"] = pd.to_datetime(df["date"])
         df = df.rename(columns={"date": "datetime"})
         df = df.set_index("datetime").sort_index()
-        df = df[["open", "high", "low", "close"]].dropna()
+        df = df.rename(columns={"volume": "vol"})
+        df["amt"] = 0.0
+        df = df[["open", "high", "low", "close", "vol", "amt"]].dropna()
         if len(df) >= LOOKBACK + PREDICT + 1:
             all_data[sym] = df
     return all_data
