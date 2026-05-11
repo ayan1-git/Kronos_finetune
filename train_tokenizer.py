@@ -56,8 +56,7 @@ def create_dataloaders(config: dict, rank: int, world_size: int):
         train_dataset,
         batch_size=config['batch_size'],
         sampler=train_sampler,
-        shuffle=False,  # Shuffle is handled by the sampler
-        num_workers=config.get('num_workers', 2),
+        num_workers=4,
         pin_memory=True,
         drop_last=True
     )
@@ -65,8 +64,7 @@ def create_dataloaders(config: dict, rank: int, world_size: int):
         valid_dataset,
         batch_size=config['batch_size'],
         sampler=val_sampler,
-        shuffle=False,
-        num_workers=config.get('num_workers', 2),
+        num_workers=4,
         pin_memory=True,
         drop_last=False
     )
@@ -116,6 +114,7 @@ def train_model(model, device, config, save_dir, logger, rank, world_size):
     best_val_loss = float('inf')
     dt_result = {}
     batch_idx_global_train = 0
+    scaler = torch.cuda.amp.GradScaler()
 
     for epoch_idx in range(config['epochs']):
         epoch_start_time = time.time()
@@ -131,28 +130,32 @@ def train_model(model, device, config, save_dir, logger, rank, world_size):
 
             # --- Gradient Accumulation Loop ---
             current_batch_total_loss = 0.0
+            optimizer.zero_grad()
             for j in range(config['accumulation_steps']):
                 start_idx = j * (ori_batch_x.shape[0] // config['accumulation_steps'])
                 end_idx = (j + 1) * (ori_batch_x.shape[0] // config['accumulation_steps'])
                 batch_x = ori_batch_x[start_idx:end_idx]
 
                 # Forward pass
-                zs, bsq_loss, _, _ = model(batch_x)
-                z_pre, z = zs
+                with torch.cuda.amp.autocast():
+                    zs, bsq_loss, _, _ = model(batch_x)
+                    z_pre, z = zs
 
-                # Loss calculation
-                recon_loss_pre = F.mse_loss(z_pre, batch_x)
-                recon_loss_all = F.mse_loss(z, batch_x)
-                recon_loss = recon_loss_pre + recon_loss_all
-                loss = (recon_loss + bsq_loss) / 2  # Assuming w_1=w_2=1
-
-                loss_scaled = loss / config['accumulation_steps']
+                    # Loss calculation
+                    recon_loss_pre = F.mse_loss(z_pre, batch_x)
+                    recon_loss_all = F.mse_loss(z, batch_x)
+                    recon_loss = recon_loss_pre + recon_loss_all
+                    loss = (recon_loss + bsq_loss) / 2  # Assuming w_1=w_2=1
+                    loss_scaled = loss / config['accumulation_steps']
+                
                 current_batch_total_loss += loss.item()
-                loss_scaled.backward()
+                scaler.scale(loss_scaled).backward()
 
             # --- Optimizer Step after Accumulation ---
+            scaler.unscale_(optimizer)
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
             scheduler.step()
             optimizer.zero_grad()
 
