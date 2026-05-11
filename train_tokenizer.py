@@ -114,8 +114,8 @@ def train_model(model, device, config, save_dir, logger, rank, world_size):
     best_val_loss = float('inf')
     dt_result = {}
     batch_idx_global_train = 0
-    scaler = torch.cuda.amp.GradScaler()
-
+    scaler = torch.amp.GradScaler('cuda')
+    
     for epoch_idx in range(config['epochs']):
         epoch_start_time = time.time()
         model.train()
@@ -137,7 +137,7 @@ def train_model(model, device, config, save_dir, logger, rank, world_size):
                 batch_x = ori_batch_x[start_idx:end_idx]
 
                 # Forward pass
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast('cuda'):
                     zs, bsq_loss, _, _ = model(batch_x)
                     z_pre, z = zs
 
@@ -148,6 +148,11 @@ def train_model(model, device, config, save_dir, logger, rank, world_size):
                     loss = (recon_loss + bsq_loss) / 2  # Assuming w_1=w_2=1
                     loss_scaled = loss / config['accumulation_steps']
                 
+                if torch.isnan(loss):
+                    print(f"[Rank {rank}] WARNING: NaN loss detected, skipping batch step.")
+                    optimizer.zero_grad()
+                    continue
+
                 current_batch_total_loss += loss.item()
                 scaler.scale(loss_scaled).backward()
 
@@ -156,8 +161,8 @@ def train_model(model, device, config, save_dir, logger, rank, world_size):
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
             scaler.step(optimizer)
             scaler.update()
-            scheduler.step()
             optimizer.zero_grad()
+            scheduler.step()
 
             # --- Logging (Master Process Only) ---
             if rank == 0 and (batch_idx_global_train + 1) % config['log_interval'] == 0:
