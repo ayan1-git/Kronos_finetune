@@ -44,9 +44,10 @@ def run_backtest():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Running backtest on {device}...")
 
-    # 1. Load Models
-    tokenizer = KronosTokenizer.from_pretrained(config.finetuned_tokenizer_path)
-    model = Kronos.from_pretrained(config.finetuned_predictor_path)
+    # 1. Load Models (Base models from Hugging Face)
+    token = os.getenv("HF_TOKEN")
+    tokenizer = KronosTokenizer.from_pretrained(config.pretrained_tokenizer_path, token=token)
+    model = Kronos.from_pretrained(config.pretrained_predictor_path, token=token)
     predictor = KronosPredictor(model, tokenizer, device=device)
 
     # 2. Load Test Data
